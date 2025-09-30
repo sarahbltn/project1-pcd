@@ -16,14 +16,17 @@ Visualización de Hallazgos: Presentar los hallazgos a través de visualizacione
 ## Pasos para la Reproducción del Proyecto
 
 1. Configuración del Entorno
+
 Crear el entorno virutal utilizando uv e inicializar el entorno con el comando de uv init y asegurarse que tenga las librerías necesarias, como pandas, numpy, matplotlib.pyplot, etc.
 
 2. Obtención de los Datos
+
 El conjunto de datos utilizado, Global Coffee Health Dataset, se encuentra en la carpeta de `data/raw` también está disponible en Kaggle en el siguiente enlace:
 
 https://www.kaggle.com/datasets/uom190346a/global-coffee-health-dataset/data
 
 3. Ejecución del Código
+
 Primeramente se puede encontrar el notebook `00_informe_final.ipynb` el cual contiene diferentes apartados:
 - Introducción
 - Antecedentes
