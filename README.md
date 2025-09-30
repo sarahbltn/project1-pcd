@@ -1,5 +1,5 @@
 ## Análisis de la Relación entre Consumo de Café, Sueño y Estrés
----
+
 Este proyecto se enfoca en analizar el Global Coffee Health Dataset para entender la relación entre el consumo de café y los niveles de estrés. El objetivo principal es desarrollar un modelo capaz de estimar el nivel de estrés a partir de diferentes variables de salud y estilo de vida.
 
 
@@ -11,7 +11,7 @@ Limpieza y Preprocesamiento de Datos: Manejar valores faltantes, valores duplica
 Modelado Predictivo: Desarrollar un modelo que pueda predecir los niveles de estrés basándose en el consumo de café y otros hábitos de vida.
 
 Visualización de Hallazgos: Presentar los hallazgos a través de visualizaciones claras y fáciles de interpretar.
----
+
 
 ## Pasos para la Reproducción del Proyecto
 
