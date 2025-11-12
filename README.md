@@ -62,8 +62,46 @@ Dentro de este archivo se puede ver el código necesario para la limpieza de los
 
 Una vez hecho el Data Wrangling, dentro de la carpeta de `processed` en la carpeta data, se encuentra el archivo `dataset_limipio.csv` el cual es el archivo ya con los datos limpios.
 
+El siguiente paso se encuentra en el notebook `03_training_model.ipynb`, donde se lleva a cabo el entrenamiento, evaluación y registro de modelos**.  
+En este archivo se implementan distintas etapas.
+
+Dentro del archivo se realiza lo siguiente:
+
+- División del conjunto de datos: 
+  Se divide el dataset en subconjuntos de entrenamiento, validación y prueba mediante `train_test_split`:
+  - 60% entrenamiento (`train`)
+  - 20% validación (`val`)
+  - 20% prueba (`test`)
+  
+  Cada división utiliza un `random_state=42` para garantizar resultados reproducibles.
+
+- Preprocesamiento:
+  El preprocesamiento se realiza a través de funciones personalizadas (`preprocessing_train` y `preprocessing_eval`) que implementan las siguientes transformaciones:
+  - Escalado de variables numéricas mediante `StandardScaler`.
+  - Codificación de variables categóricas con `DictVectorizer` (one-hot encoding).
+  - Eliminación de variables con alta correlación (|r| > 0.9).
+  - Selección de características relevantes usando información mutua.
+  - Balanceo de clases en el conjunto de entrenamiento para mitigar el sesgo del modelo.
+
+  Tanto el `DictVectorizer` como el `StandardScaler` se guardan como artefactos junto con el modelo dentro de MLflow, asegurando que el proceso de transformación sea el mismo en futuras ejecuciones o despliegues.
+
+- Entrenamiento y evaluación de modelos:
+  Se entrenan y comparan diferentes modelos supervisados (p. ej., Regresión Logística, Árbol de Decisión, Random Forest) utilizando las métricas de desempeño adecuadas.  
+  Cada experimento se registra en MLflow Tracking, almacenando:
+  - Parámetros de entrenamiento  
+  - Métricas de evaluación  
+  - Artefactos (modelos, preprocesadores, gráficos)
+
+- Reproducibilidad:  
+  Para asegurar consistencia en los resultados:
+  - Todas las funciones que involucran aleatoriedad definen `random_state=42`.  
+  - El preprocesamiento se guarda junto con el modelo para evitar data leakage.  
+  - Las dependencias del entorno se documentan en `pyproject.toml` o `requirements.txt`.
+
+Con este flujo se garantiza que los resultados puedan ser replicados íntegramente, desde la carga de datos limpios hasta la evaluación final del modelo. Hay que asegurarse de tener su archivo .env con su TOKEN y HOST de databricks y cambiar su correo electronico en el apartado "<tu_correo>"
+
 
 ## Conclusiones y Futuro del Proyecto
 Como se mencionó anteriormente el archivo `00_informe_final.ipynb` detalla las decisiones tomadas durante el proceso de elaboración del proyecto. 
 
-Las siguientes etapas del proyecto se centrarán en el entrenamiento de modelos de machine learning y la evaluación de su rendimiento para predecir los niveles de estrés de manera efectiva.
+Las siguientes etapas del proyecto se centrarán en mejorar las metricas del modelo y realizar un pipeline con lo que ya se tiene hecho.
