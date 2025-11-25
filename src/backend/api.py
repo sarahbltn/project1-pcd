@@ -10,21 +10,24 @@ import numpy as np
 
 load_dotenv(override=True)
 
+# =========================================
+# CONFIG MLflow
+# =========================================
 mlflow.set_tracking_uri("databricks")
 client = MlflowClient()
 
-EXPERIMENT_NAME = "/Users/sarahbeltrang@gmail.com.mx/project1-experiment"
+EXPERIMENT_NAME = "/Users/priscila.cervantes@iteso.mx/project1-experiment"
+model_name = "workspace.default.equipo1-proyecto"   # <- nombre correcto del pipeline
+alias = "Champion"
 
-# Buscar mejor run
-run_ = mlflow.search_runs(
-    order_by=['metrics.f1 DESC'], #cambiar porque no se como guardamos si f1 o f1_score o como
-    output_format="list",
-    experiment_names=[EXPERIMENT_NAME]
-)[0]
+# =========================================
+# Cargar preprocesadores guardados
+# =========================================
 
-run_id = run_.info.run_id
+# Descarga artifacts del champion
+champ_version = client.get_model_version_by_alias(model_name, alias)
+run_id = champ_version.run_id
 
-# Descargar preprocesadores del run
 client.download_artifacts(run_id, "preprocessor", ".")
 
 with open("preprocessor/dv.b", "rb") as f:
@@ -33,25 +36,19 @@ with open("preprocessor/dv.b", "rb") as f:
 with open("preprocessor/scaler.b", "rb") as f:
     scaler = pickle.load(f)
 
-with open("preprocessor/top_features.pkl", "rb") as f:
-    top_features = pickle.load(f)
+with open("preprocessor/features.pkl", "rb") as f:
+    features = pickle.load(f)
 
-
-# ================================
-# Cargar modelo champion
-# ================================
-
-model_name = "workspace.default.project1-model" #cambiar segun el nombre del modelo no s eocmo le pusimos
-alias = "champion"
+# =========================================
+# Cargar modelo champion desde MLflow
+# =========================================
 model_uri = f"models:/{model_name}@{alias}"
-
 champion_model = mlflow.pyfunc.load_model(model_uri)
 
-
-# ================================
-# Funciones de Preprocesamiento  
-# (versión para API = eval)
-# ================================
+# =========================================
+# Preprocesamiento (versión API)
+# Igual que preprocessing_eval del pipeline
+# =========================================
 
 def _map_continent(country):
     pais_a_continente = {
@@ -66,95 +63,87 @@ def _map_continent(country):
 
 sleep_map = {"Poor": "Bad", "Fair": "Bad", "Good": "Good", "Excellent": "Good"}
 
+
 def preprocess(input_data):
 
     df = pd.DataFrame([input_data.dict()])
 
-    # 1. Sleep_Quality -> Sleep_Group
     if "Sleep_Quality" in df.columns:
         df["Sleep_Group"] = df["Sleep_Quality"].map(sleep_map)
         df = df.drop(columns=["Sleep_Quality"], errors="ignore")
 
-    # 2. Eliminar columnas que no van
-    df = df.drop(columns=["Health_Issues", "Caffeine_mg", "Sleep_Hours"], errors="ignore")
+    df = df.drop(columns=['Health_Issues', 'Caffeine_mg', 'Sleep_Hours'], errors="ignore")
 
-    # 3. Country -> Continent
     if "Country" in df.columns:
         df["Continent"] = df["Country"].map(_map_continent)
 
-    # 4. Gender map
     if "Gender" in df.columns:
         df["Gender"] = df["Gender"].map({"Male": 0, "Female": 1})
 
-    # 5. Drop columnas irrelevantes
     df = df.drop(columns=["Country", "ID"], errors="ignore")
 
-    # 6. bool → int
     for col in df.columns:
         if df[col].dtype == bool:
             df[col] = df[col].astype(int)
 
-    # 7. Transformación con DictVectorizer
+    # DictVectorizer
     X_dicts = df.to_dict(orient="records")
     X_encoded = dv.transform(X_dicts).astype(float)
-
-    # 8. Reemplazar NaN e infinitos
     X_encoded[~np.isfinite(X_encoded)] = 0.0
 
     X_df = pd.DataFrame(X_encoded, columns=dv.get_feature_names_out())
 
-    # 9. Asegurar que todas las top_features existan
-    for f in top_features:
+    # asegurar order de columnas features.pkl
+    for f in features:
         if f not in X_df.columns:
             X_df[f] = 0.0
 
-    # 10. Ordenar columnas
-    X_df = X_df[top_features]
+    X_df = X_df[features]
 
-    # 11. Escalar
     X_scaled = scaler.transform(X_df.values)
 
     return X_scaled
 
 
-
-# ================================
+# =========================================
 # Predicción
-# ================================
-
+# =========================================
 def predict(input_data):
     X = preprocess(input_data)
-    pred = champion_model.predict(X)
-    return pred
+    return champion_model.predict(X)
+    
 
 
-# ================================
+# =========================================
 # FastAPI
-# ================================
+# =========================================
 
 app = FastAPI()
 
 class InputData(BaseModel):
-    Sleep_Quality: str | None = None
-    Sleep_Group: str | None = None  # opcional si ya la mandan
-    Occupation: str | None = None
-    Coffee_Intake: float | None = None
-    Physical_Activity_Hours: float | None = None
-    Continent: str | None = None
-    Country: str | None = None
-    BMI: float | None = None
-    Alcohol_Consumption: float | None = None
-    Age: float | None = None
-    Gender: str | None = None
-    Heart_Rate: float | None = None
-    Smoking: int | None = None
-    ID: int | None = None
-    Health_Issues: int | None = None
-    Caffeine_mg: float | None = None
-    Sleep_Hours: float | None = None
+    Sleep_Quality: str 
+    Sleep_Group: str 
+    Occupation: str 
+    Coffee_Intake: float 
+    Physical_Activity_Hours: float 
+    Continent: str 
+    Country: str 
+    BMI: float 
+    Alcohol_Consumption: float 
+    Age: float 
+    Gender: str 
+    Heart_Rate: float 
+    Smoking: int 
+    ID: int 
+    Health_Issues: int 
+    Caffeine_mg: float 
+    Sleep_Hours: float 
 
 
 @app.post("/api/v1/predict")
 def predict_endpoint(payload: InputData):
     pred = predict(payload)[0]
     return {"prediction": float(pred)}
+
+
+
