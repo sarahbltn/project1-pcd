@@ -1,4 +1,3 @@
-# train_pipeline_prefect.py
 import os
 import pathlib
 import pickle
@@ -30,25 +29,19 @@ from optuna.samplers import TPESampler
 import matplotlib
 matplotlib.use("Agg")
 
-# -------------------------
-# Config
-# -------------------------
+# Cargar credenciales
 load_dotenv(override=True)
 
 EXPERIMENT_NAME = "/Users/monica.ibarra@iteso.mx/project1-experiment"
 MODEL_REGISTRY_NAME = "workspace.default.equipo1-proyecto"
 
-# apuntar a databricks (igual que en tu notebook)
 mlflow.set_tracking_uri("databricks")
 mlflow.set_experiment(EXPERIMENT_NAME)
 
-# Desactivar autolog por defecto (evita runs adicionales con nombres aleatorios)
 mlflow.sklearn.autolog(log_models=False)
 mlflow.xgboost.autolog(log_models=False)
 
-# -------------------------
-# Helpers / Preprocessing (tal cual tu versión)
-# -------------------------
+# Preprocesamiento
 def _map_continent(country):
     pais_a_continente = {
         "Canada": "America", "USA": "America", "Mexico": "America", "Brazil": "America",
@@ -75,13 +68,12 @@ def preprocessing_train(df: pd.DataFrame, n_top_features: int = 20):
     if "Country" in df.columns:
         df["Continent"] = df["Country"].map(_map_continent)
 
-    # target mapping
+
     df['Stress_Level'] = df['Stress_Level'].map({'Low': 0, 'Medium': 1, 'High': 2})
     if "Gender" in df.columns:
         df['Gender'] = df['Gender'].map({'Male': 0, 'Female': 1})
     df = df.drop(columns=["Country","ID"], errors='ignore')
 
-    # bool -> int
     for col in df.columns:
         if df[col].dtype == 'bool':
             df[col] = df[col].astype(int)
@@ -116,7 +108,6 @@ def preprocessing_train(df: pd.DataFrame, n_top_features: int = 20):
     to_drop_corr = [col for col in upper.columns if any(upper[col] > 0.9)]
     X_filtered = X_df_encoded.drop(columns=to_drop_corr, errors='ignore')
 
-    # mutual info
     mi = mutual_info_classif(X_filtered.values, y, random_state=42)
     mi_series = pd.Series(mi, index=X_filtered.columns)
     top_features = mi_series.nlargest(n_top_features).index.tolist()
@@ -169,9 +160,7 @@ def preprocessing_eval(df: pd.DataFrame, dv: DictVectorizer, features, scaler: R
     y = df["Stress_Level"].values
     return X_scaled, y
 
-# -------------------------
-# Prefect Tasks (I/O + preprocessing)
-# -------------------------
+# Prefect Tasks
 @task(name="Read CSV")
 def read_csv_task(file_path: str) -> pd.DataFrame:
     if not os.path.exists(file_path):
@@ -193,17 +182,9 @@ def preprocess_train_task(train_df: pd.DataFrame, n_top_features: int = 20):
 def preprocess_eval_task(df_eval: pd.DataFrame, dv, features, scaler):
     return preprocessing_eval(df_eval, dv, features, scaler)
 
-# -------------------------
-# Tasks por modelo (cada uno crea un parent run con trials nested)
-# -------------------------
+# Tasks por modelo
 @task(name="Tune RF (Optuna) - single-process")
 def tune_rf_task(X_train, y_train, X_val, y_val, X_test, y_test, dv, features, scaler, n_trials: int = 10):
-    #sampler = TPESampler(seed=42)
-    #study = optuna.create_study(direction="maximize", sampler=sampler)
-
-    # We explicitly disable autolog here to avoid duplicate run creation
-    #mlflow.sklearn.autolog(log_models=False)
-
     def objective_rf(trial: optuna.trial.Trial):
         params = {
             "n_estimators": trial.suggest_int("n_estimators", 50, 500),
@@ -218,7 +199,6 @@ def tune_rf_task(X_train, y_train, X_val, y_val, X_test, y_test, dv, features, s
 
         with mlflow.start_run(nested=True):
             mlflow.set_tag("model_family", "random_forest")
-            #mlflow.log_params({k: (v if v is not None else "None") for k, v in params.items()})
             mlflow.log_params(params)
 
             clf = RandomForestClassifier(**params)
@@ -240,33 +220,26 @@ def tune_rf_task(X_train, y_train, X_val, y_val, X_test, y_test, dv, features, s
 
         return float(val_f1)
 
-    # Parent run (this name is what Databricks will display in the Experiments view)
+    # Flujo de búsqueda
     study_rf = optuna.create_study(direction="maximize", sampler=TPESampler(seed=42))
     with mlflow.start_run(run_name="RandomForest Hyperparameter Optimization (Optuna)", nested=False):
         study_rf.optimize(objective_rf, n_trials=10)
         best_rf = study_rf.best_params
         mlflow.log_params(best_rf)
-        #mlflow.set_tag("project", "Stress Level Predicition")
         mlflow.set_tags({"project": "Stress Level Predicition",
                             "optimizer_engine": "optuna",
                             "model_family": "random_forest",
                             "feature_set_version": 1,
                             })
         mlflow.sklearn.autolog(log_models=False)
-        #study.optimize(objective_rf, n_trials=n_trials)
 
-        #best_rf = study.best_params
-        #best_val = study.best_value
-        #mlflow.log_params({f"best_{k}": v for k, v in best_rf.items()})
-        #mlflow.log_metric("best_val_f1", float(best_val))
-
-        # Final nested run inside the same parent (so it appears under the parent)
+        # Run Final
         with mlflow.start_run(run_name="Final", nested=True):
             mlflow.log_params({f"final_{k}": v for k, v in best_rf.items()})
             final_model = RandomForestClassifier(**best_rf, n_jobs=-1, random_state=42)
             final_model.fit(X_train, y_train)
 
-            # Evaluate on test
+            # Evaluar en test
             y_test_pred = final_model.predict(X_test)
             y_test_proba = final_model.predict_proba(X_test)
             test_f1 = f1_score(y_test, y_test_pred, average="macro")
@@ -274,7 +247,6 @@ def tune_rf_task(X_train, y_train, X_val, y_val, X_test, y_test, dv, features, s
             mlflow.log_metric("test_accuracy", float(accuracy_score(y_test, y_test_pred)))
             mlflow.log_metric("test_log_loss", float(log_loss(y_test, y_test_proba)))
 
-            # Save preprocessor & log final model
             pathlib.Path("preprocessor").mkdir(exist_ok=True)
             with open("preprocessor/dv.b","wb") as f: pickle.dump(dv,f)
             with open("preprocessor/scaler.b","wb") as f: pickle.dump(scaler,f)
@@ -287,7 +259,6 @@ def tune_rf_task(X_train, y_train, X_val, y_val, X_test, y_test, dv, features, s
             signature = infer_signature(input_example, y_test[:5])
             mlflow.sklearn.log_model(final_model, artifact_path="model", input_example=input_example, signature=signature)
 
-    # Return useful info
     return {"model": "random_forest", "best_params": best_rf, "test_f1": float(test_f1)}
 
 @task(name="Tune XGB (Optuna) - single-process")
@@ -331,7 +302,6 @@ def tune_xgb_task(X_train, y_train, X_val, y_val, X_test, y_test, dv, features, 
     study_xgb = optuna.create_study(direction="maximize", sampler=TPESampler(seed=42))
     with mlflow.start_run(run_name="XGBoost Optimization (Optuna)", nested=False):
         study_xgb.optimize(objective_xgb, n_trials=10)
-        #mlflow.set_tag("project", "Stress Level Predicition")
         best_xgb = study_xgb.best_params
         mlflow.log_params(best_xgb)
 
@@ -371,11 +341,6 @@ def tune_xgb_task(X_train, y_train, X_val, y_val, X_test, y_test, dv, features, 
 
 @task(name="Tune LR (Optuna) - single-process")
 def tune_lr_task(X_train, y_train, X_val, y_val, X_test, y_test, dv, features, scaler, n_trials: int = 10):
-    #sampler = TPESampler(seed=42)
-    #study = optuna.create_study(direction="maximize", sampler=sampler)
-
-    #mlflow.sklearn.autolog(log_models=False)
-
     def objective_lr(trial: optuna.trial.Trial):
         penalty = trial.suggest_categorical("penalty", ["l1","l2","elasticnet"])
         params = {
@@ -418,7 +383,6 @@ def tune_lr_task(X_train, y_train, X_val, y_val, X_test, y_test, dv, features, s
         study_lr.optimize(objective_lr, n_trials=10)
         best_lr = study_lr.best_params
         mlflow.log_params(best_lr)
-        #mlflow.set_tag("project", "Stress Level Predicition")
         mlflow.set_tags({
             "project": "Stress Level Prediction",
             "optimizer_engine": "optuna",
@@ -426,12 +390,6 @@ def tune_lr_task(X_train, y_train, X_val, y_val, X_test, y_test, dv, features, s
             "feature_set_version": 1,
             })
         mlflow.sklearn.autolog(log_models=False)
-        #study.optimize(objective_lr, n_trials=n_trials)
-
-        #best_lr = study.best_params
-        #best_val = study.best_value
-        #mlflow.log_params({f"best_{k}": v for k, v in best_lr.items()})
-        #mlflow.log_metric("best_val_f1", float(best_val))
 
         with mlflow.start_run(run_name="Final", nested=True):
             mlflow.log_params({f"final_{k}": v for k, v in best_lr.items()})
@@ -459,9 +417,7 @@ def tune_lr_task(X_train, y_train, X_val, y_val, X_test, y_test, dv, features, s
 
     return {"model": "logistic_regression", "best_params": best_lr, "test_f1": float(test_f1)}
 
-# -------------------------
-# Register Champion / Challenger
-# -------------------------
+# Registrar Champion / Challenger
 @task(name="Register champion/challenger")
 def register_models_task(experiment_name: str, model_registry_name: str = MODEL_REGISTRY_NAME):
     client = MlflowClient()
@@ -480,34 +436,31 @@ def register_models_task(experiment_name: str, model_registry_name: str = MODEL_
         chal = mlflow.register_model(model_uri=f"runs:/{challenger_run_id}/model", name=model_registry_name)
         client.set_registered_model_alias(name=model_registry_name, alias="Challenger", version=chal.version)
 
-# -------------------------
 # Main Flow
-# -------------------------
 @flow(name="Stress Level - Training pipeline V2")
 def main_flow_v2(csv_path: str = "data/raw/synthetic_coffee_health_10000.csv",
                  n_top_features: int = 20,
                  n_trials: int = 10):
-    # Ensure MLflow tracking and experiment
     mlflow.set_tracking_uri("databricks")
     mlflow.set_experiment(EXPERIMENT_NAME)
 
-    # 1) Load
+    # 1) Cargar
     df = read_csv_task(csv_path)
 
     # 2) Split
     train_df, val_df, test_df = split_task(df)
 
-    # 3) Preprocess
+    # 3) Preprocesamiento
     X_train_bal, y_train_bal, dv, features, dropped, scaler = preprocess_train_task(train_df, n_top_features)
     X_val, y_val = preprocess_eval_task(val_df, dv, features, scaler)
     X_test, y_test = preprocess_eval_task(test_df, dv, features, scaler)
 
-    # 4) Tune each model (each task creates a parent run with nested trial runs)
+    # 4) Tunear cada modelo
     rf_res = tune_rf_task(X_train_bal, y_train_bal, X_val, y_val, X_test, y_test, dv, features, scaler, n_trials)
     xgb_res = tune_xgb_task(X_train_bal, y_train_bal, X_val, y_val, X_test, y_test, dv, features, scaler, n_trials, wait_for=[rf_res])
     lr_res = tune_lr_task(X_train_bal, y_train_bal, X_val, y_val, X_test, y_test, dv, features, scaler, n_trials, wait_for=[rf_res, xgb_res])
 
-    # 5) Register champion / challenger (order by best_val_f1)
+    # 5) Registrar champion / challenger
     register_models_task(EXPERIMENT_NAME, MODEL_REGISTRY_NAME, wait_for=[rf_res, xgb_res, lr_res])
 
     return {"rf": rf_res, "xgb": xgb_res, "lr": lr_res, "dropped": dropped}
