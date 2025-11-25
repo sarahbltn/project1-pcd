@@ -32,7 +32,7 @@ from optuna.samplers import TPESampler
 # -------------------------
 load_dotenv(override=True)
 
-EXPERIMENT_NAME = "/Users/monica.ibarra@iteso.mx/project1-experiment"
+EXPERIMENT_NAME = "/Users/sarahbeltrang@gmail.com.mx/project1-experiment"
 MODEL_REGISTRY_NAME = "workspace.default.equipo1-proyecto"
 mlflow.set_tracking_uri("databricks")
 mlflow.set_experiment(EXPERIMENT_NAME)
