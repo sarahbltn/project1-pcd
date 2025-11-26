@@ -121,23 +121,17 @@ def predict(input_data):
 app = FastAPI()
 
 class InputData(BaseModel):
-    Sleep_Quality: str 
-    Sleep_Group: str 
+    Sleep_Quality: str
     Occupation: str 
     Coffee_Intake: float 
     Physical_Activity_Hours: float 
-    Continent: str 
     Country: str 
     BMI: float 
-    Alcohol_Consumption: float 
-    Age: float 
+    Alcohol_Consumption: str 
+    Age: int
     Gender: str 
-    Heart_Rate: float 
-    Smoking: int 
-    ID: int 
-    Health_Issues: int 
-    Caffeine_mg: float 
-    Sleep_Hours: float 
+    Heart_Rate: int 
+    Smoking: bool  
 
 
 @app.post("/api/v1/predict")
