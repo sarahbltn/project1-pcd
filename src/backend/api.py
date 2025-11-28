@@ -10,28 +10,29 @@ import numpy as np
 
 load_dotenv(override=True)
 
-# =========================================
 # CONFIG MLflow
-# =========================================
 mlflow.set_tracking_uri("databricks")
 client = MlflowClient()
 
 EXPERIMENT_NAME = "/Users/priscila.cervantes@iteso.mx/project1-experiment"
-model_name = "workspace.default.equipo1-proyecto"   # <- nombre correcto del pipeline
-alias = "Champion"
+model_name = "workspace.default.equipo1-proyecto"   
+alias = "champion"
 
-# =========================================
-# Cargar preprocesadores guardados
-# =========================================
+run_ = mlflow.search_runs(order_by=["best_val_f1 DESC"], output_format="list", experiment_names=[EXPERIMENT_NAME])[0]
 
-# Descarga artifacts del champion
-champ_version = client.get_model_version_by_alias(model_name, alias)
-run_id = champ_version.run_id
 
-client.download_artifacts(run_id, "preprocessor", ".")
+run_id = run_.info.run_id
 
-with open("preprocessor/dv.b", "rb") as f:
-    dv = pickle.load(f)
+run_uri = f"runs:/{run_id}/preprocessor"
+
+client.download_artifacts(
+    run_id=run_id,
+    path='preprocessor',
+    dst_path='.'
+)
+
+with open("preprocessor/preprocessor.b", "rb") as f_in:
+    dv = pickle.load(f_in)
 
 with open("preprocessor/scaler.b", "rb") as f:
     scaler = pickle.load(f)
@@ -39,16 +40,19 @@ with open("preprocessor/scaler.b", "rb") as f:
 with open("preprocessor/features.pkl", "rb") as f:
     features = pickle.load(f)
 
-# =========================================
-# Cargar modelo champion desde MLflow
-# =========================================
-model_uri = f"models:/{model_name}@{alias}"
-champion_model = mlflow.pyfunc.load_model(model_uri)
+model_name = "workspace.default.equipo1-proyecto"
+alias = "champion"
 
-# =========================================
+model_uri = f"models:/{model_name}@{alias}"
+
+champion_model = mlflow.pyfunc.load_model(
+    model_uri=model_uri
+)
+
+# Cargar preprocesadores guardados
+
 # Preprocesamiento (versión API)
 # Igual que preprocessing_eval del pipeline
-# =========================================
 
 def _map_continent(country):
     pais_a_continente = {
@@ -62,6 +66,8 @@ def _map_continent(country):
     return pais_a_continente.get(country, np.nan)
 
 sleep_map = {"Poor": "Bad", "Fair": "Bad", "Good": "Good", "Excellent": "Good"}
+
+alcohol_map = {"Yes": 1, "No": 0}
 
 
 def preprocess(input_data):
@@ -105,38 +111,34 @@ def preprocess(input_data):
     return X_scaled
 
 
-# =========================================
 # Predicción
-# =========================================
 def predict(input_data):
     X = preprocess(input_data)
     return champion_model.predict(X)
     
 
 
-# =========================================
 # FastAPI
-# =========================================
 
 app = FastAPI()
 
 class InputData(BaseModel):
-    Sleep_Quality: str
-    Occupation: str 
-    Coffee_Intake: float 
-    Physical_Activity_Hours: float 
-    Country: str 
-    BMI: float 
-    Alcohol_Consumption: str 
-    Age: int
-    Gender: str 
-    Heart_Rate: int 
-    Smoking: bool  
-
+    sleep_quality: str
+    occupation: str 
+    coffee_intake: float 
+    physical_activity_hours: float 
+    country: str 
+    bmi: float 
+    alcohol_consumption: str 
+    age: int
+    gender: str 
+    heart_rate: int 
+    smoking: str  
 
 @app.post("/api/v1/predict")
-def predict_endpoint(payload: InputData):
-    pred = predict(payload)[0]
+def predict_endpoint(input_data: InputData):
+    print(f"Prediction: {input_data}")
+    pred = predict(input_data)[0]
     return {"prediction": float(pred)}
 
 
