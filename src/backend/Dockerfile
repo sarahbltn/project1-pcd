@@ -2,10 +2,8 @@ FROM python:3.13-slim
 
 WORKDIR /code
 
-# Copiar requirements y .env
 COPY ./requirements.txt /code/requirements.txt
 
-# Dependencias del sistema
 RUN apt-get update && apt-get install -y procps && \
     pip install -U pip && \
     rm /etc/localtime && \
@@ -14,11 +12,8 @@ RUN apt-get update && apt-get install -y procps && \
 
 COPY ./preprocessor /code/preprocessor
 
-# Copiar la app
 COPY ./api.py /code/
 
-# Exponer puerto FastAPI
 EXPOSE 8000
 
-# Comando de ejecución
 CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]

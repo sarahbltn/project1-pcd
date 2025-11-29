@@ -211,9 +211,9 @@ def tune_rf_task(X_train, y_train, X_val, y_val, X_test, y_test, dv, features, s
             val_acc = accuracy_score(y_val, y_pred)
             val_f1 = f1_score(y_val, y_pred, average="macro")
 
-            mlflow.log_metric("val_log_loss", float(val_logloss))
-            mlflow.log_metric("val_accuracy", float(val_acc))
-            mlflow.log_metric("val_f1_macro", float(val_f1))
+            mlflow.log_metric("log_loss", float(val_logloss))
+            mlflow.log_metric("accuracy", float(val_acc))
+            mlflow.log_metric("f1_macro", float(val_f1))
 
             signature = infer_signature(X_val, y_pred[:5])
             mlflow.sklearn.log_model(clf, "model", input_example=X_val[:5], signature=signature)
@@ -291,9 +291,9 @@ def tune_xgb_task(X_train, y_train, X_val, y_val, X_test, y_test, dv, features, 
             val_acc = accuracy_score(y_val, y_pred)
             val_f1 = f1_score(y_val, y_pred, average="macro")
 
-            mlflow.log_metric("val_log_loss", float(val_logloss))
-            mlflow.log_metric("val_f1_macro", float(val_f1))
-            mlflow.log_metric("val_accuracy", float(val_acc))
+            mlflow.log_metric("log_loss", float(val_logloss))
+            mlflow.log_metric("f1_macro", float(val_f1))
+            mlflow.log_metric("accuracy", float(val_acc))
 
             signature = infer_signature(X_val, y_val[:5])
             mlflow.xgboost.log_model(clf, "model", input_example=X_val[:5], signature=signature)
@@ -369,9 +369,9 @@ def tune_lr_task(X_train, y_train, X_val, y_val, X_test, y_test, dv, features, s
             val_acc = accuracy_score(y_val, y_pred)
             val_f1 = f1_score(y_val, y_pred, average="macro")
 
-            mlflow.log_metric("val_log_loss", float(val_logloss))
-            mlflow.log_metric("val_f1_macro", float(val_f1))
-            mlflow.log_metric("val_accuracy", float(val_acc))
+            mlflow.log_metric("log_loss", float(val_logloss))
+            mlflow.log_metric("f1_macro", float(val_f1))
+            mlflow.log_metric("accuracy", float(val_acc))
 
             signature = infer_signature(X_val, y_val[:5])
             mlflow.sklearn.log_model(lr, "model", input_example=X_val[:5], signature=signature)
@@ -421,7 +421,7 @@ def tune_lr_task(X_train, y_train, X_val, y_val, X_test, y_test, dv, features, s
 @task(name="Register champion/challenger")
 def register_models_task(experiment_name: str, model_registry_name: str = MODEL_REGISTRY_NAME):
     client = MlflowClient()
-    runs = mlflow.search_runs(experiment_names=[experiment_name], order_by=["metrics.best_val_f1 DESC"], output_format="list")
+    runs = mlflow.search_runs(experiment_names=[experiment_name], order_by=["metrics.f1_macro DESC"], output_format="list")
 
     champion_run = runs[0]
     champion_run_id = champion_run.info.run_id

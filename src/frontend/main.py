@@ -2,12 +2,8 @@ import streamlit as st
 import requests
 from typing import Dict, Any
 
-# Configuración de la página
 st.set_page_config(page_title="Stress Level Prediction", layout="centered")
 
-# ========================
-# Sidebar explicativo
-# ========================
 st.image("https://www.hipnosisvalencia.com/wp-content/uploads/2021/01/Tratamiento-de-la-ansiedad-por-hipnosis.jpg", use_container_width=True)
 st.sidebar.title("About this App")
 st.sidebar.info(
@@ -22,9 +18,6 @@ st.sidebar.info(
 
 st.sidebar.markdown("---")
 
-# ========================
-# Título principal
-# ========================
 st.markdown("<h1 style='text-align: center; color: #4B8BBE;'>Stress Level Prediction</h1>", unsafe_allow_html=True)
 st.markdown("<h3 style='text-align: center; color: #306998;'>Predict your stress level based on lifestyle factors</h3>", unsafe_allow_html=True)
 st.write("---")
@@ -42,7 +35,6 @@ OCCUPATION = ["Office", "Other", "Student", "Healthcare", "Service"]
 ALCOHOL_CONSUMPTION = ["Yes", "No"]
 SMOKING = ["Yes", "No"]
 
-# Función para construir payload
 def build_sample(country, gender, age, coffee_intake, bmi, smoking, physical_activity_hours,
                  sleep_quality, alcohol_consumption, heart_rate, occupation) -> Dict[str, Any]:
     return {
@@ -59,9 +51,6 @@ def build_sample(country, gender, age, coffee_intake, bmi, smoking, physical_act
         "occupation": occupation
     }
 
-# ========================
-# Formulario
-# ========================
 st.subheader("Fill the form to predict stress level")
 with st.form("form_sample"):
     col1, col2 = st.columns(2)
@@ -84,9 +73,7 @@ with st.form("form_sample"):
 
     submitted = st.form_submit_button("Predict")
 
-# ========================
 # Predicción
-# ========================
 if submitted:
     input_dict = build_sample(
         country, gender, age, coffee_intake, bmi, smoking, physical_activity_hours,
@@ -95,7 +82,7 @@ if submitted:
 
     try:
         response = requests.post(
-            "http://127.0.0.1:8000/predict",  # En Docker usar host.docker.internal si API está en host
+            "http://127.0.0.1:8000/predict",  
             json=input_dict,
             timeout=10
         )
