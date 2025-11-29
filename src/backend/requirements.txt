@@ -5,6 +5,6 @@ mlflow_tracing==3.4.0
 pandas==2.3.3
 pydantic==2.12.4
 python-dotenv==1.2.1
-xgboost==3.1.1
+scikit-learn==1.7.2
 
 

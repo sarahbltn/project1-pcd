@@ -1,12 +1,8 @@
-# =====================================================================
-# Dockerfile para FastAPI + MLflow Model Registry + Preprocesadores
-# =====================================================================
-
 FROM python:3.13-slim
 
 WORKDIR /code
 
-# Copiar requirements si existe
+# Copiar requirements y .env
 COPY ./requirements.txt /code/requirements.txt
 
 # Dependencias del sistema
@@ -16,6 +12,7 @@ RUN apt-get update && apt-get install -y procps && \
     ln -s /usr/share/zoneinfo/America/Mexico_City /etc/localtime && \
     pip install -r ./requirements.txt
 
+COPY ./preprocessor /code/preprocessor
 
 # Copiar la app
 COPY ./api.py /code/

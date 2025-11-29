@@ -32,7 +32,7 @@ matplotlib.use("Agg")
 # Cargar credenciales
 load_dotenv(override=True)
 
-EXPERIMENT_NAME = "/Users/priscila.cervantes@iteso.mx/project1-experiment"
+EXPERIMENT_NAME = "/Users/monica.ibarra@iteso.mx/project1-experiment"
 MODEL_REGISTRY_NAME = "workspace.default.equipo1-proyecto"
 
 mlflow.set_tracking_uri("databricks")
