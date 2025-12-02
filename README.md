@@ -121,13 +121,29 @@ Despliegue en la nube, Space del backend, space del forntend y la integración.
 
 Se creó un archivo `.env` con **DATABRICKS_HOST** y **DATABRICKS_TOKEN** para la conexión con Databricks.
 
+## Comandos
+
+- Se clona el repositorio
+- Se crea y activa el entorno virtual
+- Instalación de independencias
+- Ejecución de pipeline
+- Levantar Backend(API)
+- Levantar interfaz gráfica (streamlit)
+- Orquestación
+
 ## Inferencia del Modeelo
 
 Es la etapa final del proyecto para poder rpedecir el **nivel de estrés**, lo que se realiza es la carga del modelo entrenado, se prepara el entorno de ejecución, se procesa la entrada del usuario, y se ejecuta el modelo para obtener la predicción. 
 
+El usuario podrá interactuar con el modelo a través de una interfaz gráfica desarrollada en Streamlit, donde podrá ingresar sus datos y recibir una predicción del nivel de estrés basado en el modelo entrenado.
 
-## Conclusiones 
-
+El usuario podrá ver la predicción del nivel de estrés en la interfaz.
+Verá algo parecido a esto:
+ 
+`Predicted stress level: ...` 
+- Si aparece un 0 significa que el nivel de estrés es Bajo.
+- Si aparece un 1 significa que el nivel de estrés es Medio
+- Si aparece un 2 significa que el nivel de estrés es Alto.
 
 
 
