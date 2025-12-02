@@ -183,7 +183,7 @@ def preprocess_eval_task(df_eval: pd.DataFrame, dv, features, scaler):
     return preprocessing_eval(df_eval, dv, features, scaler)
 
 # Tasks por modelo
-@task(name="Tune RF (Optuna) - single-process")
+@task(name="Tune RF (Optuna)")
 def tune_rf_task(X_train, y_train, X_val, y_val, X_test, y_test, dv, features, scaler, n_trials: int = 10):
     def objective_rf(trial: optuna.trial.Trial):
         params = {
@@ -261,7 +261,7 @@ def tune_rf_task(X_train, y_train, X_val, y_val, X_test, y_test, dv, features, s
 
     return {"model": "random_forest", "best_params": best_rf, "test_f1": float(test_f1)}
 
-@task(name="Tune XGB (Optuna) - single-process")
+@task(name="Tune XGB (Optuna)")
 def tune_xgb_task(X_train, y_train, X_val, y_val, X_test, y_test, dv, features, scaler, n_trials: int = 10):
 
     def objective_xgb(trial: optuna.trial.Trial):
@@ -339,7 +339,7 @@ def tune_xgb_task(X_train, y_train, X_val, y_val, X_test, y_test, dv, features, 
 
     return {"model": "xgboost", "best_params": best_xgb, "test_f1": float(test_f1)}
 
-@task(name="Tune LR (Optuna) - single-process")
+@task(name="Tune LR (Optuna)")
 def tune_lr_task(X_train, y_train, X_val, y_val, X_test, y_test, dv, features, scaler, n_trials: int = 10):
     def objective_lr(trial: optuna.trial.Trial):
         penalty = trial.suggest_categorical("penalty", ["l1","l2","elasticnet"])
