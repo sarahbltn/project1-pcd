@@ -13,10 +13,12 @@ dependencies = [
     "mlflow>=3.5.1",
     "optuna>=4.5.0",
     "pandas>=2.3.2",
+    "prefect>=3.6.4",
     "pyarrow>=21.0.0",
     "python-dotenv>=1.2.1",
     "scikit-learn>=1.7.2",
     "seaborn>=0.13.2",
     "statsmodels>=0.14.5",
+    "streamlit>=1.51.0",
     "xgboost>=3.1.1",
 ]
