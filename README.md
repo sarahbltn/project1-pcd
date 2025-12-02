@@ -1,23 +1,25 @@
 ## Análisis de la Relación entre Consumo de Café, Sueño y Estrés
 
-Este proyecto se enfoca en analizar el Global Coffee Health Dataset para entender la relación entre el consumo de café y los niveles de estrés. El objetivo principal es desarrollar un modelo capaz de estimar el nivel de estrés a partir de diferentes variables de salud y estilo de vida.
+Este proyecto analiza el Global Coffee Health Dataset con el objetivo de estudiar la relación entre el consumo de café, los hábitos de sueño y los niveles de estrés.
+Además, se desarrolla un modelo predictivo capaz de estimar el nivel de estrés a partir de variables de salud y estilo de vida.
 
 
 ## Objetivos del Proyecto
-Análisis Exploratorio de Datos (EDA): Realizar un análisis inicial para identificar patrones, valores atípicos y la calidad general del conjunto de datos.
 
-Limpieza y Preprocesamiento de Datos: Manejar valores faltantes, valores duplicados y valores atípicos, y preparar las variables categóricas para el modelado.
+**Análisis Exploratorio de Datos (EDA)**: Realizar un análisis inicial para identificar patrones, valores atípicos y la calidad general del conjunto de datos.
 
-Modelado Predictivo: Desarrollar un modelo que pueda predecir los niveles de estrés basándose en el consumo de café y otros hábitos de vida.
+**Limpieza y Preprocesamiento de Datos**: Manejar valores faltantes, valores duplicados y valores atípicos, y preparar las variables categóricas para el modelado.
 
-Visualización de Hallazgos: Presentar los hallazgos a través de visualizaciones claras y fáciles de interpretar.
+**Modelado Predictivo**: Desarrollar un modelo que pueda predecir los niveles de estrés basándose en el consumo de café y otros hábitos de vida.
+
+**Visualización de Hallazgos**: Presentar los hallazgos a través de visualizaciones claras y fáciles de interpretar.
 
 
 ## Pasos para la Reproducción del Proyecto
 
 1. Configuración del Entorno
 
-Crear el entorno virutal utilizando uv e inicializar el entorno con el comando de uv init y asegurarse que tenga las librerías necesarias, como pandas, numpy, matplotlib.pyplot, etc.
+Crear el entorno virutal utilizando uv e inicializar el entorno con el comando de uv init, uv sync y asegurarse que tenga las librerías necesarias, como pandas, numpy, matplotlib.pyplot, etc.
 
 2. Obtención de los Datos
 
@@ -101,7 +103,32 @@ Dentro del archivo se realiza lo siguiente:
 Con este flujo se garantiza que los resultados puedan ser replicados íntegramente, desde la carga de datos limpios hasta la evaluación final del modelo. Hay que asegurarse de tener su archivo .env con su TOKEN y HOST de databricks y cambiar su correo electronico en el apartado "<tu_correo>"
 
 
-## Conclusiones y Futuro del Proyecto
-Como se mencionó anteriormente el archivo `00_informe_final.ipynb` detalla las decisiones tomadas durante el proceso de elaboración del proyecto. 
+Para el paso final, `00_informe_final.ipynb` se encuentra una recopilación final de todo el proyecto. Por último, en el infrome final se agregó la Servicio de inferencia (FastAPI), donde el resultado final es que el cliente pueda realizar predicciones.
 
-Las siguientes etapas del proyecto se centrarán en mejorar las metricas del modelo y realizar un pipeline con lo que ya se tiene hecho.
+La arquitectura del servicio: preprocesadores locales donde se cargan desde el contenedor los artefactos guardados en MLflow (DictVectorizer, StandardScaler y lista de features); Modelos en mlflow registry donde se descarga desde databricks.
+
+Validación y procesamiento de inputs con esquema Pydantic y transformaciones aplicadas. Los endpoints (GET y POST) donde se puede consultar el estado del servicio y realizar predicciones respectivamente.
+
+Streamlit, que UI actua como interfaz principal para el usuario, donde puede hacer predicciones.
+
+El flujo de comunicación donde básicamente el usuario interactúa, la UI construye el JSON, envía un POST a la API y por último s emuestra en pantalla.
+
+Contenerización: Contenedor Backend, Frontend y la orquestación de contenedores.
+
+Despliegue en la nube, Space del backend, space del forntend y la integración.
+
+## Variables de entorno 
+
+Se creó un archivo `.env` con **DATABRICKS_HOST** y **DATABRICKS_TOKEN** para la conexión con Databricks.
+
+## Inferencia del Modeelo
+
+Es la etapa final del proyecto para poder rpedecir el **nivel de estrés**, lo que se realiza es la carga del modelo entrenado, se prepara el entorno de ejecución, se procesa la entrada del usuario, y se ejecuta el modelo para obtener la predicción. 
+
+
+## Conclusiones 
+
+
+
+
+
