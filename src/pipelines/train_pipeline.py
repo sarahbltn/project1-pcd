@@ -168,7 +168,7 @@ def read_csv_task(file_path: str) -> pd.DataFrame:
     return pd.read_csv(file_path)
 
 @task(name="Split data")
-def split_task(df: pd.DataFrame, test_size: float = 0.4, seed: int = 42):
+def split_task(df: pd.DataFrame, test_size: float = 0.2, seed: int = 42):
     target = "Stress_Level"
     train_df, temp_df = train_test_split(df, test_size=test_size, random_state=seed, stratify=df[target])
     val_df, test_df = train_test_split(temp_df, test_size=0.5, random_state=seed, stratify=temp_df[target])
